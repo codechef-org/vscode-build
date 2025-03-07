@@ -25,20 +25,6 @@
 (regex) @string.regexp
 (number) @constant.numeric
 
-; Template TODO: These don't seem to be working
-
-(template_substitution
-  "${" @punctuation.definition.template-expression.begin
-  "}" @punctuation.definition.template-expression.end)
-
-(template_type
-  "${" @punctuation.definition.template-expression.begin
-  "}" @punctuation.definition.template-expression.end)
-
-(type_arguments
-  "<" @punctuation.bracket
-  ">" @punctuation.bracket)
-
 ; Properties
 
 (member_expression
@@ -61,9 +47,10 @@
 (function_declaration
   name: (identifier) @entity.name.function)
 (method_definition
-  name: (property_identifier) @meta.definition.method @entity.name.function)
+  name: (property_identifier) @meta.definition.method @entity.name.function
+  (#not-eq? @entity.name.function "constructor"))
 (method_definition
-  name: (property_identifier) @storage.type
+  name: (property_identifier) @meta.definition.method @storage.type
   (#eq? @storage.type "constructor"))
 (method_signature
   name: (property_identifier) @meta.definition.method @entity.name.function)
@@ -85,6 +72,19 @@
   left: (identifier) @entity.name.function
   right: [(function_expression) (arrow_function)])
 
+(required_parameter
+  (identifier) @variable.parameter)
+
+(required_parameter
+  (rest_pattern
+    (identifier) @variable.parameter))
+
+(optional_parameter
+  (identifier) @variable.parameter)
+
+(catch_clause
+  parameter: (identifier) @variable.parameter)
+
 ; Function and method calls
 
 (call_expression
@@ -99,6 +99,8 @@
   function: (member_expression
     property: (property_identifier) @entity.name.function))
 
+(new_expression) @new.expr
+
 (new_expression
   constructor: (identifier) @entity.name.function)
 
@@ -106,12 +108,10 @@
 ; Special identifiers
 
 (predefined_type) @support.type
-(predefined_type (["string" "boolean" "number" "any"])) @support.type.primitive
+(predefined_type (["string" "boolean" "number" "any" "unknown"])) @support.type.primitive
 (type_identifier) @entity.name.type
-
-(("const")
-  (variable_declarator
-  	name: (identifier) @variable.other.constant))
+(internal_module
+  name: (identifier) @entity.name.type.ts)
 
 ([
   (identifier)
@@ -121,6 +121,9 @@
 
 (extends_clause
   value: (identifier) @entity.other.inherited-class)
+
+(implements_clause
+  (type_identifier) @entity.other.inherited-class)
 
 ; Tokens
 
@@ -192,7 +195,6 @@
   "<<="
   "=="
   "!="
-  "=>"
   ">>"
   ">>="
   ">>>"
@@ -201,6 +203,36 @@
   "&"
   "|"
 ] @keyword.operator
+
+(union_type
+  ("|") @keyword.operator.type)
+
+(intersection_type
+  ("&") @keyword.operator.type)
+
+(type_annotation
+  (":") @keyword.operator.type.annotation)
+
+[
+  "{"
+  "}"
+  "("
+  ")"
+  "["
+  "]"
+] @punctuation
+
+(template_substitution
+  "${" @punctuation.definition.template-expression.begin
+  "}" @punctuation.definition.template-expression.end)
+
+(template_type
+  "${" @punctuation.definition.template-expression.begin
+  "}" @punctuation.definition.template-expression.end)
+
+(type_arguments
+  "<" @punctuation.definition.typeparameters
+  ">" @punctuation.definition.typeparameters)
 
 ; Keywords
 
@@ -275,6 +307,10 @@
 ] @storage.type
 
 [
+  "module"
+] @storage.type.namespace.ts
+
+[
   "debugger"
   "target"
   "with"
@@ -293,11 +329,14 @@
 (public_field_definition
   ("?") @keyword.operator.optional)
 
-(optional_parameter)
+(property_signature
+  ("?") @keyword.operator.optional)
+
+(optional_parameter
   ([
     "?"
     ":"
-  ]) @keyword.operator.optional
+  ]) @keyword.operator.optional)
 
 (ternary_expression
   ([
@@ -310,16 +349,40 @@
 
 (rest_pattern) @keyword.operator.rest
 
-(spread_element) @keyword.operator.spread
+(spread_element
+  ("...") @keyword.operator.spread)
 
 ; Language constants
 
 [
-  (true)
-  (false)
   (null)
+] @constant.language.null
+
+[
   (undefined)
-] @constant.language
+] @constant.language.undefined
+
+ ((identifier) @constant.language.nan
+   (#eq? @constant.language.nan "NaN"))
+
+ ((identifier) @constant.language.infinity
+   (#eq? @constant.language.infinity "Infinity"))
+
+[
+  (true)
+] @constant.language.boolean.true
+
+[
+  (false)
+] @constant.language.boolean.false
+
+(literal_type
+  [
+    (null)
+    (undefined)
+    (true)
+    (false)
+  ] @support.type.builtin)
 
 (namespace_import
   "*" @constant.language)
